@@ -1,0 +1,11 @@
+{
+  "name": "musclemap",
+  "private": true,
+  "version": "0.1.0",
+  "scripts": {
+    "dev": "concurrently -k -n backend,frontend -c blue,magenta \".venv/bin/uvicorn app.main:app --app-dir backend --reload\" \"npm --prefix frontend run dev\""
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}

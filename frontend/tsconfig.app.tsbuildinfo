@@ -1,0 +1,1 @@
+{"root":["./src/app.test.tsx","./src/app.tsx","./src/main.tsx","./src/types.ts","./src/vite-env.d.ts","./src/components/bodyviewer.tsx","./src/components/detailspanel.tsx","./src/components/exerciselist.tsx","./src/components/legend.tsx","./src/lib/api.ts","./src/lib/colors.ts","./src/lib/workouttree.test.ts","./src/lib/workouttree.ts","./src/test/setup.ts"],"version":"5.7.3"}

@@ -1,0 +1,21 @@
+services:
+  - type: web
+    name: musclemap
+    env: docker
+    plan: free
+    dockerfilePath: ./Dockerfile
+    autoDeploy: true
+    healthCheckPath: /api/health
+    envVars:
+      - key: MUSCLEMAP_MOCK_MODE
+        value: "false"
+      - key: LLM_PROVIDER
+        value: "openai"
+      - key: LLM_BASE_URL
+        value: "https://api.openai.com/v1"
+      - key: LLM_MODEL
+        value: "gpt-5-mini"
+      - key: LLM_TIMEOUT_SECONDS
+        value: "180"
+      - key: LLM_API_KEY
+        sync: false
