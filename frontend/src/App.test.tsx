@@ -8,6 +8,12 @@ vi.mock('./components/BodyViewer', () => ({
 }));
 
 vi.mock('./lib/api', () => ({
+  getHealth: vi.fn(async () => ({
+    status: 'ok',
+    mock_mode: false,
+    provider: 'openai',
+    model: 'gpt-5-mini'
+  })),
   getBodySchema: vi.fn(async () => ({
     version: 'test-schema',
     labels: ['none', 'low', 'moderate', 'high'],
@@ -89,6 +95,7 @@ test('renders workout library and legend', async () => {
   expect((await screen.findAllByRole('button', { name: /Analyze/i })).length).toBeGreaterThan(0);
   expect(await screen.findByText(/Body Overview/i)).toBeInTheDocument();
   expect(await screen.findByText(/Scope Inspector/i)).toBeInTheDocument();
+  expect(await screen.findByText(/Mode: live LLM/i)).toBeInTheDocument();
 });
 
 test('generates a complementary workout draft', async () => {

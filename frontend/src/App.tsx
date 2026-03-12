@@ -1,6 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
 
-import { analyzeWorkout, generateWorkout, getBodySchema } from './lib/api';
+import { analyzeWorkout, generateWorkout, getBodySchema, getHealth } from './lib/api';
 import { BodyViewer } from './components/BodyViewer';
 import { DetailsPanel } from './components/DetailsPanel';
 import { ExerciseList, type WorkoutRecord } from './components/ExerciseList';
@@ -82,6 +82,7 @@ function LoadingGlyph() {
 
 export default function App() {
   const [schema, setSchema] = useState<BodySchemaResponse | null>(null);
+  const [backendMode, setBackendMode] = useState<'loading' | 'mock' | 'live'>('loading');
   const [workouts, setWorkouts] = useState<WorkoutRecord[]>(starterWorkouts.map((workout) => ({ ...workout, analysis: null, isAnalyzing: false, isCollapsed: false })));
   const [activeWorkoutId, setActiveWorkoutId] = useState(starterWorkouts[0].id);
   const [selectedWorkoutId, setSelectedWorkoutId] = useState(starterWorkouts[0].id);
@@ -99,7 +100,12 @@ export default function App() {
   const [isAnalyzingAll, setIsAnalyzingAll] = useState(false);
 
   useEffect(() => {
-    getBodySchema().then(setSchema).catch((caught) => setError(caught instanceof Error ? caught.message : 'Unknown error'));
+    Promise.all([getBodySchema(), getHealth()])
+      .then(([nextSchema, health]) => {
+        setSchema(nextSchema);
+        setBackendMode(health.mock_mode ? 'mock' : 'live');
+      })
+      .catch((caught) => setError(caught instanceof Error ? caught.message : 'Unknown error'));
   }, []);
 
   const filteredWorkouts = useMemo(() => workouts.filter((workout) => workout.name.toLowerCase().includes(workoutSearch.toLowerCase())), [workoutSearch, workouts]);
@@ -382,6 +388,7 @@ export default function App() {
     : selectedExerciseDetail
       ? 'Exercise Inspector'
       : 'Scope Inspector';
+  const modeLabel = backendMode === 'live' ? 'live LLM' : backendMode === 'mock' ? 'mock mode' : 'checking mode';
 
   return (
     <div className="app-shell app-shell-rebuilt">
@@ -482,7 +489,7 @@ export default function App() {
       <main className="center-column anatomy-focus-column">
         <div className="status-bar status-card">
           <span>Schema: {schema?.version ?? 'loading'}</span>
-          <span>Mode: {workouts.some((workout) => workout.analysis && !workout.analysis.mock_mode) ? 'live LLM' : 'mock / live ready'}</span>
+          <span>Mode: {modeLabel}</span>
           <span>{selectionTitle(selectedWorkoutId, selectedScopePath, activeWorkout?.name ?? 'Workout')}</span>
         </div>
         <div className="viewer-card viewer-card-compact">

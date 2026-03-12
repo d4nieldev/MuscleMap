@@ -31,6 +31,13 @@ export type BodySchemaResponse = {
   muscle_groups: MuscleGroupSchemaItem[];
 };
 
+export type HealthResponse = {
+  status: string;
+  mock_mode: boolean;
+  provider: string;
+  model: string;
+};
+
 export type BodyPartActivation = {
   body_part_id: string;
   muscle_group_id: string | null;

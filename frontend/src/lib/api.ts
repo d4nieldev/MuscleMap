@@ -1,4 +1,4 @@
-import type { AnalyzeWorkoutResponse, BodySchemaResponse, GenerateWorkoutResponse, ParseWorkoutResponse, WorkoutGenerationSource } from '../types';
+import type { AnalyzeWorkoutResponse, BodySchemaResponse, GenerateWorkoutResponse, HealthResponse, ParseWorkoutResponse, WorkoutGenerationSource } from '../types';
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/$/, '');
 
@@ -33,6 +33,10 @@ async function request<T>(path: string, options?: RequestInit): Promise<T> {
 
 export function getBodySchema(): Promise<BodySchemaResponse> {
   return request<BodySchemaResponse>('/api/body-schema');
+}
+
+export function getHealth(): Promise<HealthResponse> {
+  return request<HealthResponse>('/api/health');
 }
 
 export function parseWorkout(text: string): Promise<ParseWorkoutResponse> {

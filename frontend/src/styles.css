@@ -24,9 +24,8 @@
 html, body {
   margin: 0;
   width: 100%;
-  min-height: 100%;
-  overflow-x: hidden;
-  overflow-y: auto;
+  height: 100%;
+  overflow: hidden;
 }
 
 body { min-width: 320px; }
@@ -34,8 +33,9 @@ button, textarea, input { font: inherit; }
 code { font-family: "SF Mono", Consolas, monospace; font-size: 0.78rem; }
 #root {
   width: 100%;
-  min-height: 100vh;
-  min-height: 100dvh;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
 }
 
 .app-shell {
@@ -48,8 +48,8 @@ code { font-family: "SF Mono", Consolas, monospace; font-size: 0.78rem; }
   width: 100%;
   grid-template-columns: minmax(390px, 1.08fr) minmax(360px, 1.2fr) minmax(320px, 0.9fr);
   gap: 14px;
-  min-height: calc(100vh - 28px);
-  min-height: calc(100dvh - 28px);
+  height: calc(100vh - 28px);
+  height: calc(100dvh - 28px);
   align-items: stretch;
 }
 
@@ -58,6 +58,7 @@ code { font-family: "SF Mono", Consolas, monospace; font-size: 0.78rem; }
   flex-direction: column;
   gap: 14px;
   min-height: 0;
+  height: 100%;
 }
 
 .input-card, .exercise-list-card, .legend-card, .viewer-card, .details-card, .error-card, .status-card {
@@ -74,6 +75,12 @@ code { font-family: "SF Mono", Consolas, monospace; font-size: 0.78rem; }
 .viewer-card,
 .inspector-card {
   min-height: 0;
+}
+
+.exercise-list-card {
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .right-column-split {
@@ -181,7 +188,7 @@ button:hover { filter: brightness(1.06); }
   border: 1px solid var(--border);
   background: var(--panel-soft);
   min-height: 0;
-  overflow: hidden;
+  overflow: auto;
 }
 .generator-panel {
   margin-top: 10px;
@@ -274,8 +281,17 @@ textarea {
   font-size: 0.82rem;
 }
 .subtab-button { padding: 8px 10px; border-radius: 10px; }
-.exercise-nav-rows { margin-top: 10px; }
-.tree-root { height: 100%; overflow: auto; padding-right: 4px; min-height: 0; }
+.exercise-nav-rows {
+  margin-top: 10px;
+  flex: 1 1 auto;
+  min-height: 0;
+}
+.tree-root {
+  height: 100%;
+  overflow: auto;
+  padding-right: 4px;
+  min-height: 0;
+}
 .tree-node { margin-top: 6px; }
 .tree-row { display: flex; gap: 6px; align-items: center; }
 .tree-toggle,
@@ -455,11 +471,25 @@ textarea {
 }
 
 @media (max-width: 820px) {
+  html, body {
+    height: auto;
+    min-height: 100%;
+    overflow-x: hidden;
+    overflow-y: auto;
+  }
+  #root {
+    height: auto;
+    min-height: 100vh;
+    min-height: 100dvh;
+    overflow: visible;
+  }
   .app-shell {
     padding: 10px;
   }
   .app-shell-rebuilt {
     gap: 10px;
+    height: auto;
+    min-height: auto;
   }
   .input-card, .exercise-list-card, .details-card, .error-card, .status-card {
     padding: 12px;
@@ -511,6 +541,11 @@ textarea {
   .exercise-list-card,
   .inspector-card {
     overflow: visible;
+  }
+  .workspace-column,
+  .anatomy-focus-column,
+  .inspector-column {
+    height: auto;
   }
   .tree-root {
     height: auto;
