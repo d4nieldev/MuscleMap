@@ -25,6 +25,7 @@ type SceneBodyProps = BodyViewerProps & {
   cumulativeLookup: Map<string, number>;
   useNormalizedAggregate: boolean;
   meshLookup: Map<string, string>;
+  isTouchDevice: boolean;
 };
 
 function normalizeMeshName(name: string) {
@@ -66,7 +67,7 @@ function transformGeometry(geometry: THREE.BufferGeometry, center: THREE.Vector3
   geometry.computeBoundingSphere();
 }
 
-function SceneBody({ activationLookup, cumulativeLookup, useNormalizedAggregate, meshLookup, selectedBodyPartId, highlightedBodyPartIds, onSelectBodyPart, metricMode }: SceneBodyProps) {
+function SceneBody({ activationLookup, cumulativeLookup, useNormalizedAggregate, meshLookup, selectedBodyPartId, highlightedBodyPartIds, onSelectBodyPart, metricMode, isTouchDevice }: SceneBodyProps) {
   const { scene } = useGLTF('/assets/anatomy.glb');
   const { camera } = useThree();
   const controlsRef = useRef<any>(null);
@@ -186,13 +187,13 @@ function SceneBody({ activationLookup, cumulativeLookup, useNormalizedAggregate,
       <OrbitControls
         ref={controlsRef}
         makeDefault
-        enablePan
+        enablePan={!isTouchDevice}
         enableRotate
         enableZoom
         screenSpacePanning
         dampingFactor={0.08}
         enableDamping
-        rotateSpeed={0.9}
+        rotateSpeed={isTouchDevice ? 0.7 : 0.9}
         panSpeed={0.9}
         zoomSpeed={0.9}
         mouseButtons={{
@@ -200,12 +201,33 @@ function SceneBody({ activationLookup, cumulativeLookup, useNormalizedAggregate,
           MIDDLE: THREE.MOUSE.DOLLY,
           RIGHT: THREE.MOUSE.PAN
         }}
+        touches={{
+          ONE: THREE.TOUCH.ROTATE,
+          TWO: isTouchDevice ? THREE.TOUCH.DOLLY_ROTATE : THREE.TOUCH.DOLLY_PAN
+        }}
       />
     </>
   );
 }
 
 export function BodyViewer(props: BodyViewerProps) {
+  const [isTouchDevice, setIsTouchDevice] = useState(false);
+
+  useEffect(() => {
+    const mediaQuery = window.matchMedia('(pointer: coarse)');
+    const updateInputMode = () => setIsTouchDevice(mediaQuery.matches);
+
+    updateInputMode();
+
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updateInputMode);
+      return () => mediaQuery.removeEventListener('change', updateInputMode);
+    }
+
+    mediaQuery.addListener(updateInputMode);
+    return () => mediaQuery.removeListener(updateInputMode);
+  }, []);
+
   const matchingExercise = useMemo(
     () => props.exercises.find((item) => item.exercise_name === props.selectedExercise || item.path.join(' > ') === props.selectedExercise),
     [props.exercises, props.selectedExercise]
@@ -253,12 +275,12 @@ export function BodyViewer(props: BodyViewerProps) {
         <directionalLight position={[-10, 10, -10]} intensity={0.8} color="#d24b4b" />
         <directionalLight position={[0, 5, -20]} intensity={0.35} color="#5f0f17" />
         <Suspense fallback={null}>
-          <SceneBody {...props} activationLookup={activationLookup} cumulativeLookup={cumulativeLookup} useNormalizedAggregate={useNormalizedAggregate} meshLookup={meshLookup} />
+          <SceneBody {...props} activationLookup={activationLookup} cumulativeLookup={cumulativeLookup} useNormalizedAggregate={useNormalizedAggregate} meshLookup={meshLookup} isTouchDevice={isTouchDevice} />
           <Environment preset="warehouse" />
         </Suspense>
       </Canvas>
       <Legend className="legend-overlay" aggregateMode={useNormalizedAggregate} metricMode={props.metricMode} />
-      <div className="viewer-note">Left-drag to rotate, right-drag to pan, scroll to zoom, and click a region to inspect it.</div>
+      <div className="viewer-note">{isTouchDevice ? 'Drag to rotate, pinch to zoom, and tap a region to inspect it.' : 'Left-drag to rotate, right-drag to pan, scroll to zoom, and click a region to inspect it.'}</div>
     </div>
   );
 }
