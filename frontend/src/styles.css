@@ -708,6 +708,11 @@ textarea {
   .input-card, .exercise-list-card, .details-card, .error-card, .status-card {
     padding: 12px;
   }
+  .workspace-card,
+  .workout-editor,
+  .generator-panel {
+    overflow: visible;
+  }
   .viewer-card {
     padding: 8px;
   }
@@ -741,7 +746,23 @@ textarea {
     min-width: 0;
   }
   .workout-editor {
-    overflow: visible;
+    flex: none;
+  }
+  .single-editor,
+  .generator-panel {
+    flex: none;
+    min-height: auto;
+  }
+  .workout-textarea,
+  .generator-guidance {
+    flex: none;
+  }
+  .workout-textarea {
+    min-height: 240px;
+  }
+  .generator-guidance {
+    min-height: 140px;
+    max-height: none;
   }
   textarea {
     min-height: 180px;

@@ -136,4 +136,7 @@ def frontend_root():
 def frontend_app(full_path: str):
     if full_path.startswith("api/"):
         raise HTTPException(status_code=404, detail="Not found")
+    static_path = frontend_dist / full_path
+    if static_path.exists() and static_path.is_file():
+        return FileResponse(static_path)
     return FileResponse(_frontend_index())
