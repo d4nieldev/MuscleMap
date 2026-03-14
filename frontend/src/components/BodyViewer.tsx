@@ -193,9 +193,9 @@ function SceneBody({ activationLookup, cumulativeLookup, useNormalizedAggregate,
         screenSpacePanning
         dampingFactor={0.08}
         enableDamping
-        rotateSpeed={isTouchDevice ? 0.7 : 0.9}
+        rotateSpeed={isTouchDevice ? 0.75 : 0.9}
         panSpeed={0.9}
-        zoomSpeed={0.9}
+        zoomSpeed={isTouchDevice ? 0.85 : 0.9}
         mouseButtons={{
           LEFT: THREE.MOUSE.ROTATE,
           MIDDLE: THREE.MOUSE.DOLLY,

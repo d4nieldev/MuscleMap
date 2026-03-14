@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 
 import { analyzeWorkout, generateWorkout, getBodySchema, getHealth } from './lib/api';
 import { BodyViewer } from './components/BodyViewer';
@@ -94,6 +94,8 @@ function LoadingGlyph() {
 }
 
 export default function App() {
+  const workoutTextareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const generatorTextareaRef = useRef<HTMLTextAreaElement | null>(null);
   const [initialPersistedState] = useState<PersistedAppState | null>(() => loadPersistedAppState());
   const initialWorkouts = initialPersistedState ? toRuntimeWorkouts(initialPersistedState.workouts) : buildStarterWorkouts();
   const initialActiveWorkoutId = initialPersistedState?.activeWorkoutId ?? initialWorkouts[0].id;
@@ -301,6 +303,44 @@ export default function App() {
     const timeoutId = window.setTimeout(() => setNavigatorPulsePath(null), 2000);
     return () => window.clearTimeout(timeoutId);
   }, [navigatorPulsePath]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return;
+    }
+    if (typeof window.matchMedia !== 'function') {
+      return;
+    }
+
+    const mobileViewport = window.matchMedia('(max-width: 820px)');
+    const resizeTextarea = (element: HTMLTextAreaElement | null) => {
+      if (!element) {
+        return;
+      }
+      if (!mobileViewport.matches) {
+        element.style.height = '';
+        return;
+      }
+      element.style.height = '0px';
+      element.style.height = `${element.scrollHeight}px`;
+    };
+
+    resizeTextarea(workoutTextareaRef.current);
+    resizeTextarea(generatorTextareaRef.current);
+
+    const handleChange = () => {
+      resizeTextarea(workoutTextareaRef.current);
+      resizeTextarea(generatorTextareaRef.current);
+    };
+
+    if (typeof mobileViewport.addEventListener === 'function') {
+      mobileViewport.addEventListener('change', handleChange);
+      return () => mobileViewport.removeEventListener('change', handleChange);
+    }
+
+    mobileViewport.addListener(handleChange);
+    return () => mobileViewport.removeListener(handleChange);
+  }, [activeWorkout?.text, generatorGuidance]);
 
   function focusExerciseInNavigator(workoutId: string, scopePath: string) {
     setActiveWorkoutId(workoutId);
@@ -573,7 +613,7 @@ export default function App() {
                   </button>
                 </div>
               </div>
-              <textarea className="workout-textarea" value={activeWorkout.text} onChange={(event) => updateWorkout(activeWorkout.id, { text: event.target.value })} rows={12} placeholder="Write the workout naturally. The model will organize it into sections and exercises." />
+              <textarea ref={workoutTextareaRef} className="workout-textarea" value={activeWorkout.text} onChange={(event) => updateWorkout(activeWorkout.id, { text: event.target.value })} rows={12} placeholder="Write the workout naturally. The model will organize it into sections and exercises." />
             </div>
           )}
           <div className="generator-panel">
@@ -594,6 +634,7 @@ export default function App() {
               </button>
             </div>
             <textarea
+              ref={generatorTextareaRef}
               className="generator-input generator-guidance"
               value={generatorGuidance}
               onChange={(event) => setGeneratorGuidance(event.target.value)}

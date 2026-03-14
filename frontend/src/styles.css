@@ -756,6 +756,8 @@ textarea {
   .workout-textarea,
   .generator-guidance {
     flex: none;
+    overflow: hidden;
+    touch-action: pan-y;
   }
   .workout-textarea {
     min-height: 240px;
@@ -791,10 +793,10 @@ textarea {
   .viewer-shell {
     height: clamp(280px, 52vh, 420px);
     min-height: 280px;
-    touch-action: pan-y;
+    touch-action: none;
   }
   .viewer-shell canvas {
-    touch-action: pan-y;
+    touch-action: none;
   }
   .viewer-note {
     left: 10px;
