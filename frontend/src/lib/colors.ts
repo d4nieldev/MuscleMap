@@ -43,11 +43,11 @@ export function discreteMetricTextColor(label: ActivationLabel, metricMode: Metr
 }
 
 export function metricTitle(metricMode: MetricMode) {
-  return metricMode === 'load' ? 'Load' : 'Endurance';
+  return metricMode === 'load' ? 'Strength' : 'Endurance';
 }
 
 export function metricVerb(metricMode: MetricMode) {
-  return metricMode === 'load' ? 'loaded' : 'trained for endurance';
+  return metricMode === 'load' ? 'worked for strength' : 'trained for endurance';
 }
 
 export function metricBadgeLabel(label: ActivationLabel, metricMode: MetricMode) {

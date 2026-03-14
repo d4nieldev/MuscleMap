@@ -1,7 +1,8 @@
 import { fireEvent, render, screen } from '@testing-library/react';
-import { vi } from 'vitest';
+import { beforeEach, vi } from 'vitest';
 
 import App from './App';
+import { STORAGE_KEY } from './lib/persistence';
 
 vi.mock('./components/BodyViewer', () => ({
   BodyViewer: () => <div>3D Viewer Mock</div>
@@ -89,13 +90,17 @@ vi.mock('./lib/api', () => ({
   }))
 }));
 
+beforeEach(() => {
+  window.localStorage.clear();
+});
+
 test('renders workout library and legend', async () => {
   render(<App />);
   expect((await screen.findAllByText(/Workouts/i)).length).toBeGreaterThan(0);
   expect((await screen.findAllByRole('button', { name: /Analyze/i })).length).toBeGreaterThan(0);
   expect(await screen.findByText(/Body Overview/i)).toBeInTheDocument();
   expect(await screen.findByText(/Scope Inspector/i)).toBeInTheDocument();
-  expect(await screen.findByText(/Mode: live LLM/i)).toBeInTheDocument();
+  expect(screen.queryByText(/Mode: live LLM/i)).not.toBeInTheDocument();
 });
 
 test('generates a complementary workout draft', async () => {
@@ -108,5 +113,38 @@ test('generates a complementary workout draft', async () => {
 
   expect(await screen.findByDisplayValue('Complementary Workout')).toBeInTheDocument();
   expect(await screen.findByDisplayValue(/Pull-ups - 4x8/)).toBeInTheDocument();
-  expect(await screen.findByText(/Last targets: Back, Lats/i)).toBeInTheDocument();
+  expect(await screen.findByText(/^Targets the least-covered muscle groups across all analyzed workouts\.$/i)).toBeInTheDocument();
+});
+
+test('hydrates workouts from browser storage', async () => {
+  window.localStorage.setItem(STORAGE_KEY, JSON.stringify({
+    version: 1,
+    savedAt: new Date().toISOString(),
+    state: {
+      workouts: [
+        {
+          id: 'saved-1',
+          name: 'Saved Workout',
+          text: 'Row - 4x10',
+          analysis: null,
+          lastAnalyzedText: null,
+        }
+      ],
+      activeWorkoutId: 'saved-1',
+      selectedWorkoutId: 'saved-1',
+      selectedScopePath: '__aggregate__',
+      selectedBodyPartId: null,
+      metricMode: 'endurance',
+      exerciseDetailMode: 'muscles',
+      generatorGuidance: 'Bike only',
+      lastGeneratedTargets: ['Back'],
+      lastGenerationRationale: 'Saved rationale',
+    }
+  }));
+
+  render(<App />);
+
+  expect(await screen.findByDisplayValue('Saved Workout')).toBeInTheDocument();
+  expect(await screen.findByDisplayValue('Row - 4x10')).toBeInTheDocument();
+  expect(await screen.findByDisplayValue('Bike only')).toBeInTheDocument();
 });

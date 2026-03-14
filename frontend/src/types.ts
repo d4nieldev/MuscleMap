@@ -109,6 +109,37 @@ export type AnalyzeWorkoutResponse = {
   mock_mode: boolean;
 };
 
+export type WorkoutRecord = {
+  id: string;
+  name: string;
+  text: string;
+  analysis: AnalyzeWorkoutResponse | null;
+  lastAnalyzedText?: string | null;
+  isAnalyzing: boolean;
+  isCollapsed: boolean;
+};
+
+export type PersistedWorkout = {
+  id: string;
+  name: string;
+  text: string;
+  analysis: AnalyzeWorkoutResponse | null;
+  lastAnalyzedText: string | null;
+};
+
+export type PersistedAppState = {
+  workouts: PersistedWorkout[];
+  activeWorkoutId: string;
+  selectedWorkoutId: string;
+  selectedScopePath: string;
+  selectedBodyPartId: string | null;
+  metricMode: 'load' | 'endurance';
+  exerciseDetailMode: 'groups' | 'muscles';
+  generatorGuidance: string;
+  lastGeneratedTargets: string[];
+  lastGenerationRationale: string | null;
+};
+
 export type WorkoutGenerationSource = {
   workout_name: string;
   workout_text: string;

@@ -262,7 +262,7 @@ def load_body_schema() -> BodySchemaResponse:
             source_body_id=str(entry.get("bpId") or "") or None,
             fma_id=str(entry.get("fmaId") or "") or None,
             is_tendon=bool(entry["isTendon"]),
-            aliases=list({str(entry["name"]), str(entry["originalName"])}),
+            aliases=sorted({str(entry["name"]), str(entry["originalName"])}),
         )
         for entry in raw_entries
     ]

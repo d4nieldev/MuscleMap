@@ -13,7 +13,7 @@ export function Legend({ className = '', aggregateMode = false, metricMode = 'lo
   if (aggregateMode) {
     return (
       <div className={`legend-card ${className}`.trim()}>
-        <div className="section-title">{metricMode === 'load' ? 'Cumulative Load' : 'Cumulative Endurance'}</div>
+        <div className="section-title">{metricMode === 'load' ? 'Cumulative Strength' : 'Cumulative Endurance'}</div>
         <div className={metricMode === 'load' ? 'legend-gradient' : 'legend-gradient legend-gradient-endurance'} />
         <div className="legend-range">
           <span>low</span>
@@ -25,7 +25,7 @@ export function Legend({ className = '', aggregateMode = false, metricMode = 'lo
 
   return (
     <div className={`legend-card ${className}`.trim()}>
-      <div className="section-title">{metricMode === 'load' ? 'Training Load' : metricTitle(metricMode)}</div>
+      <div className="section-title">{metricMode === 'load' ? 'Strength Focus' : metricTitle(metricMode)}</div>
       <div className="legend-scale">
         {activationLabels.map((label) => (
           <div className="legend-item" key={label}>

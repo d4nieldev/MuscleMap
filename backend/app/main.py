@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
+from contextlib import asynccontextmanager
 
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
@@ -19,6 +20,7 @@ from app.services.inference_service import (
     analyze_workout,
     generate_complementary_workout,
     infer_exercise,
+    warm_default_prompt_cache,
 )
 from app.services.parser_service import parse_structured_exercises, parse_workout_text
 from app.services.schema_service import load_body_schema
@@ -27,7 +29,20 @@ from app.services.schema_service import load_body_schema
 logger = logging.getLogger(__name__)
 
 
-app = FastAPI(title=get_settings().app_name, version=get_settings().app_version)
+@asynccontextmanager
+async def lifespan(_: FastAPI):
+    try:
+        warm_default_prompt_cache()
+    except Exception:
+        logger.exception("Default prompt cache warmup failed during startup.")
+    yield
+
+
+app = FastAPI(
+    title=get_settings().app_name,
+    version=get_settings().app_version,
+    lifespan=lifespan,
+)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],

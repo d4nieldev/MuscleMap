@@ -3,6 +3,8 @@ import type { MetricMode } from '../lib/colors';
 import type { ActivationLabel, AggregateActivation, BodySchemaResponse, ExerciseInference } from '../types';
 
 type Contribution = {
+  workout_id: string;
+  scope_path: string;
   exercise_name: string;
   workout_name: string;
   load_label: ActivationLabel;
@@ -22,9 +24,10 @@ type DetailsPanelProps = {
   aggregateActivations: AggregateActivation[];
   contributions: Contribution[];
   normalizedScore?: number | null;
+  onSelectContribution?: (workoutId: string, scopePath: string) => void;
 };
 
-export function DetailsPanel({ schema, metricMode, selectedBodyPartId, selectedExercise, exercises, aggregateActivations, contributions, normalizedScore = null }: DetailsPanelProps) {
+export function DetailsPanel({ schema, metricMode, selectedBodyPartId, selectedExercise, exercises, aggregateActivations, contributions, normalizedScore = null, onSelectContribution }: DetailsPanelProps) {
   const part = schema?.body_parts.find((item) => item.body_part_id === selectedBodyPartId) ?? null;
   const aggregate = aggregateActivations.find((item) => item.body_part_id === selectedBodyPartId) ?? null;
   const exercise = exercises.find((item) => item.path.join(' > ') === selectedExercise || item.exercise_name === selectedExercise) ?? null;
@@ -51,12 +54,12 @@ export function DetailsPanel({ schema, metricMode, selectedBodyPartId, selectedE
         <span>{part.fma_id ?? 'n/a'}</span>
       </div>
       {active ? <div className="activation-chip" style={{ background: discreteMetricColor(metricMode === 'load' ? active.load_label : active.endurance_label, metricMode), color: discreteMetricTextColor(metricMode === 'load' ? active.load_label : active.endurance_label, metricMode) }}>{formatActivationLabel(metricMode === 'load' ? active.load_label : active.endurance_label)}</div> : <div className="activation-chip muted-chip">none</div>}
-      {normalizedScore !== null && normalizedScore > 0 && <p className="mini-meta">Cumulative {metricMode} intensity: {normalizedScore.toFixed(2)}</p>}
+      {normalizedScore !== null && normalizedScore > 0 && <p className="mini-meta">Cumulative {metricMode === 'load' ? 'strength' : 'endurance'} intensity: {normalizedScore.toFixed(2)}</p>}
       {exerciseActivation?.reason && <p>{exerciseActivation.reason}</p>}
       {contributions.length > 0 && (
         <div className="contribution-list compact-list">
           {contributions.map((item) => (
-            <div className="contribution-row" key={`${item.workout_name}-${item.exercise_name}-${metricMode === 'load' ? item.load_label : item.endurance_label}`}>
+            <button className="contribution-row contribution-row-button" key={`${item.workout_name}-${item.exercise_name}-${metricMode === 'load' ? item.load_label : item.endurance_label}`} type="button" onClick={() => onSelectContribution?.(item.workout_id, item.scope_path)}>
               <div className="contribution-topline">
                 <strong>{item.exercise_name}</strong>
                 <span className="mini-meta">{item.workout_name} · {item.movement_pattern} · {item.unilateral ? 'unilateral' : 'bilateral'}</span>
@@ -71,9 +74,9 @@ export function DetailsPanel({ schema, metricMode, selectedBodyPartId, selectedE
               >
                 {formatActivationLabel(metricMode === 'load' ? item.load_label : item.endurance_label)}
               </div>
-              <div className="mini-meta">Load: {formatActivationLabel(item.load_label)} · Endurance: {formatActivationLabel(item.endurance_label)}</div>
+              <div className="mini-meta">Strength: {formatActivationLabel(item.load_label)} · Endurance: {formatActivationLabel(item.endurance_label)}</div>
               <p>{item.reason}</p>
-            </div>
+            </button>
           ))}
         </div>
       )}

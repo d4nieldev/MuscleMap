@@ -29,6 +29,7 @@ from app.models import (
     WorkoutAnalysisResponse,
 )
 from app.services.cache_service import cache_service
+from app.services.default_workouts import DEFAULT_WORKOUTS
 from app.services.schema_service import (
     allowed_muscle_group_ids,
     body_part_to_muscle_group_ids,
@@ -253,6 +254,39 @@ def _build_cache_key(workout_text: str) -> str:
         "mock_mode": settings.mock_mode,
         "schema_version": schema.version,
         "analysis_contract_version": 3,
+    }
+    return hashlib.sha256(json.dumps(seed, sort_keys=True).encode("utf-8")).hexdigest()
+
+
+def _build_generation_cache_key(request: GenerateWorkoutRequest) -> str:
+    settings = get_settings()
+    seed = {
+        "request": {
+            "metric_mode": request.metric_mode,
+            "guidance": (request.guidance or "").strip(),
+            "workouts": [
+                {
+                    "workout_name": workout.workout_name,
+                    "workout_text": _normalize_text(workout.workout_text),
+                    "exercise_names": [
+                        exercise.exercise_name for exercise in workout.exercises
+                    ],
+                    "aggregate_groups": [
+                        {
+                            "muscle_group_id": item.muscle_group_id,
+                            "load_label": item.load_label,
+                            "endurance_label": item.endurance_label,
+                        }
+                        for item in workout.aggregate_group_activations
+                    ],
+                }
+                for workout in request.workouts
+            ],
+        },
+        "model": settings.llm_model,
+        "mock_mode": settings.mock_mode,
+        "schema_version": load_body_schema().version,
+        "generation_contract_version": 2,
     }
     return hashlib.sha256(json.dumps(seed, sort_keys=True).encode("utf-8")).hexdigest()
 
@@ -967,6 +1001,7 @@ Source workouts:
 
 Requirements:
 - Return one complementary workout, not a full weekly program.
+- Give the workout a relatively short, punchy title.
 - Bias exercise selection toward the target muscle groups while keeping the session coherent.
 - Respect the optional guidance if provided.
 - Return structured workout content with a warmup array, 2-4 blocks, and optional finisher/notes.
@@ -1350,6 +1385,11 @@ def generate_complementary_workout(
             request.workouts, request.metric_mode, request.guidance
         )
 
+    cache_key = _build_generation_cache_key(request)
+    cached = cache_service.get(cache_key)
+    if cached:
+        return GenerateWorkoutResponse.model_validate(cached)
+
     payload = {
         "model": settings.llm_model,
         "messages": [
@@ -1405,10 +1445,59 @@ def generate_complementary_workout(
             "LLM returned a workout shell without enough concrete exercise lines. Please try again."
         ) from exc
 
-    return GenerateWorkoutResponse(
+    result = GenerateWorkoutResponse(
         title=draft.title,
         text=_render_generated_workout_text(draft),
         target_muscle_groups=draft.target_muscle_groups,
         rationale=draft.rationale,
         mock_mode=False,
     )
+    cache_service.set(cache_key, result.model_dump(mode="json"))
+    return result
+
+
+def warm_default_prompt_cache() -> None:
+    settings = get_settings()
+    if settings.mock_mode:
+        logger.info("Skipping default LLM cache warmup in mock mode.")
+        return
+    if not settings.llm_api_key:
+        logger.warning(
+            "Skipping default LLM cache warmup because no API key is configured."
+        )
+        return
+
+    logger.info("Warming default workout prompt cache.")
+
+    analyzed_workouts: list[tuple[dict[str, str], AnalyzeWorkoutResponse]] = []
+    for workout in DEFAULT_WORKOUTS:
+        analysis = analyze_workout(workout["text"])
+        analyzed_workouts.append((workout, analysis))
+
+    sources = [
+        WorkoutGenerationSource(
+            workout_name=workout["name"],
+            workout_text=workout["text"],
+            exercises=analysis.exercises,
+            aggregate_group_activations=analysis.aggregate_group_activations,
+        )
+        for workout, analysis in analyzed_workouts
+    ]
+
+    for metric_mode in ("load", "endurance"):
+        request = GenerateWorkoutRequest(
+            workouts=sources,
+            metric_mode=metric_mode,
+            guidance=None,
+        )
+        generated = generate_complementary_workout(request)
+        try:
+            analyze_workout(generated.text)
+        except ValueError as exc:
+            logger.warning(
+                "Default cache warmup skipped generated workout analysis for metric_mode=%s error=%s",
+                metric_mode,
+                exc,
+            )
+
+    logger.info("Default workout prompt cache warmed successfully.")

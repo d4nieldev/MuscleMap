@@ -1,15 +1,11 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 
 import type { AnalyzeWorkoutResponse, WorkoutAnalysisNode } from '../types';
 
-export type WorkoutRecord = {
-  id: string;
-  name: string;
-  text: string;
-  analysis: AnalyzeWorkoutResponse | null;
-  isAnalyzing: boolean;
-  isCollapsed: boolean;
-};
+function openExerciseYoutubeSearch(exerciseName: string) {
+  const query = encodeURIComponent(`${exerciseName} exercise`);
+  window.open(`https://www.youtube.com/results?search_query=${query}`, '_blank', 'noopener,noreferrer');
+}
 
 type ExerciseListProps = {
   workoutName: string;
@@ -17,6 +13,8 @@ type ExerciseListProps = {
   selectedScopePath: string;
   selectedWorkoutId: string;
   activeWorkoutId: string;
+  revealScopePath?: string | null;
+  pulseScopePath?: string | null;
   onSelectScope: (workoutId: string, scopePath: string) => void;
 };
 
@@ -65,6 +63,7 @@ type TreeNodeProps = {
   workoutId: string;
   selectedWorkoutId: string;
   selectedScopePath: string;
+  pulseScopePath?: string | null;
   expandedPaths: Set<string>;
   onTogglePath: (path: string) => void;
   onSelectScope: (workoutId: string, scopePath: string) => void;
@@ -76,6 +75,7 @@ function TreeNode({
   workoutId,
   selectedWorkoutId,
   selectedScopePath,
+  pulseScopePath,
   expandedPaths,
   onTogglePath,
   onSelectScope,
@@ -103,13 +103,24 @@ function TreeNode({
           <span className="tree-toggle-placeholder" />
         )}
         <button
-          className={active ? 'subtab-button active' : 'subtab-button'}
+          className={pulseScopePath === currentPath ? (active ? 'subtab-button active navigator-pulse' : 'subtab-button navigator-pulse') : (active ? 'subtab-button active' : 'subtab-button')}
           type="button"
           onClick={() => onSelectScope(workoutId, currentPath)}
         >
           <span>{label}</span>
-          {node.type === 'section' ? renderSummary(counts) : <span className="tree-summary"><span className="tree-summary-dot" /></span>}
+          {node.type === 'section' ? renderSummary(counts) : null}
         </button>
+        {node.type === 'exercise' ? (
+          <button
+            aria-label={`Search ${label} on YouTube`}
+            className="tree-link-button"
+            title="Search on YouTube"
+            type="button"
+            onClick={() => openExerciseYoutubeSearch(label)}
+          >
+            YouTube
+          </button>
+        ) : null}
       </div>
       {expandable && expanded ? (
         <div className="tree-children">
@@ -121,6 +132,7 @@ function TreeNode({
               workoutId={workoutId}
               selectedWorkoutId={selectedWorkoutId}
               selectedScopePath={selectedScopePath}
+              pulseScopePath={pulseScopePath}
               expandedPaths={expandedPaths}
               onTogglePath={onTogglePath}
               onSelectScope={onSelectScope}
@@ -138,9 +150,34 @@ export function ExerciseList({
   selectedScopePath,
   selectedWorkoutId,
   activeWorkoutId,
+  revealScopePath,
+  pulseScopePath,
   onSelectScope,
 }: ExerciseListProps) {
   const [expandedPaths, setExpandedPaths] = useState<Set<string>>(new Set());
+
+  useEffect(() => {
+    if (!analysis || !revealScopePath) {
+      return;
+    }
+
+    if (!revealScopePath.startsWith(`${analysis.workout_analysis.workout_title} > `)) {
+      return;
+    }
+
+    const segments = revealScopePath.split(' > ');
+    if (segments.length <= 2) {
+      return;
+    }
+
+    setExpandedPaths((current) => {
+      const next = new Set(current);
+      for (let index = 1; index < segments.length - 1; index += 1) {
+        next.add(segments.slice(0, index + 1).join(' > '));
+      }
+      return next;
+    });
+  }, [analysis, revealScopePath]);
 
   function onTogglePath(path: string) {
     setExpandedPaths((current) => {
@@ -159,7 +196,13 @@ export function ExerciseList({
       <div className="panel-header compact-header">
         <div>
           <div className="section-title">Navigator</div>
-          <h3>{workoutName}</h3>
+          <div className="title-with-info">
+            <h3>{workoutName}</h3>
+            <span className="info-tooltip" tabIndex={0} aria-label="Navigator help">
+              <span className="info-tooltip-trigger">i</span>
+              <span className="info-tooltip-content">Browse the analyzed workout tree, switch between the full workout and this workout, and click any section or exercise to inspect its muscle activity.</span>
+            </span>
+          </div>
         </div>
       </div>
       <button className={selectedWorkoutId === '__all__' && selectedScopePath === '__aggregate__' ? 'tab-button active' : 'tab-button'} type="button" onClick={() => onSelectScope('__all__', '__aggregate__')}>
@@ -178,6 +221,7 @@ export function ExerciseList({
               workoutId={activeWorkoutId}
               selectedWorkoutId={selectedWorkoutId}
               selectedScopePath={selectedScopePath}
+              pulseScopePath={pulseScopePath}
               expandedPaths={expandedPaths}
               onTogglePath={onTogglePath}
               onSelectScope={onSelectScope}
